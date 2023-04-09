@@ -7,7 +7,8 @@
  /**
  TODO: add C and V flags, impliment CMP and TST, remove "<this is for extra credit>" from optional instructions
  update in README: main(), parseInput(), performOperation(), printOutput()
- FIX: lsr and lsl
+ 
+ test all instructions on linux
  **/
 
 #include <iostream>
