@@ -3,6 +3,12 @@
  * 4-22-23
  * CS 219.1001
  */
+ 
+ /**
+ TODO: add C and V flags, impliment CMP and TST, remove "<this is for extra credit>" from optional instructions
+ update in README: main(), parseInput(), performOperation(), printOutput()
+ FIX: lsr and lsl
+ **/
 
 #include <iostream>
 #include <iomanip>
@@ -10,14 +16,17 @@
 #include <sstream>
 #include <string>
 
-int32_t performOperation(std::string, const uint32_t, const uint32_t);
-std::string removeSpaces(const std::string);
+void performOperation(std::string, const int, const int, const int, const int, const int32_t);
+std::string parseInput(const std::string);
 uint32_t convertToInt(const std::string);
-void printOutput(const std::string, const uint32_t, const uint32_t, const uint32_t, const int[2]);
+int convertToInt(const char);
+std::string toUpper(const std::string);
+void printOutput(const std::string, const int[2]);
+int32_t registers[8];
 
 int main() {
 	// open the input file
-  	std::ifstream inputFile("Programming-Project-2.txt");
+  	std::ifstream inputFile("Programming-Project-3.txt");
   	
   	// ensure the file is successfully opened
   	if (!inputFile.is_open()) {
@@ -28,22 +37,38 @@ int main() {
 	// iterate through the instructions
   	std::string instr;
 	while (getline(inputFile, instr)) {
-		// parse the instruction for its operation and arguments
-		std::string op = removeSpaces(instr.substr(0, 4));
-		uint32_t arg1  = convertToInt(removeSpaces(instr.substr(5, 11)));
-		uint32_t arg2  = convertToInt(removeSpaces(instr.substr(16)));
-
-		// find the result and determine the values of the flags
-		int32_t result = performOperation(op, arg1, arg2);
-		int flags[2] = {0, 0}; // [N, Z]
+		std::string op;			// OPCODE
+		int RD, RN, RM, N;		// register indexes and shift amount
+		int32_t IMM;			// immediate
+		int flags[2] = {0, 0};  // [N, Z]
 		
+		// parse the instruction for its operation, then parse for the remaining arguments
+		op = toUpper(parseInput(instr.substr(0, 4)));
+		RD = convertToInt(parseInput(instr.substr(5, 3)).back());
+		
+		if (op == "MOV") {
+			IMM  = convertToInt(parseInput(instr.substr(8)));
+		}
+		else {
+			RN = convertToInt(parseInput(instr.substr(8, 3)).back());
+			
+			if (op.substr(0, 3) == "LSL" || op.substr(0, 3) == "LSR" || op.substr(0, 3) == "ASR") {
+				N = convertToInt(parseInput(instr.substr(11)));
+			}
+			else {
+				RM = convertToInt(parseInput(instr.substr(11)).back());
+			}
+		}
+		
+		// perform the operation and determine the values of the flags
+		performOperation(op, RD, RN, RM, N, IMM);
 		if (toupper(op.back()) == 'S') {
-			flags[0] = (result <  0) ? 1 : 0;
-			flags[1] = (result == 0) ? 1 : 0;
+			flags[0] = (registers[RD] <  0) ? 1 : 0;
+			flags[1] = (registers[RD] == 0) ? 1 : 0;
 		}
 		
 		// print the findings
-		printOutput(op, arg1, arg2, result, flags);
+		printOutput(instr, flags);
 	}
   	
   	// close the file
@@ -52,40 +77,51 @@ int main() {
   	return 0;
 }
 
-// Takes two arguemnts and an operation to be performed. Performs the operation and returns the result
-int32_t performOperation(std::string op, const uint32_t a, const uint32_t b) {	
-	op = op.substr(0, 3); // remove the possible "s" from the instruction
+// Takes all arguemnts and performs the operation
+void performOperation(std::string op, const int RD, const int RN, const int RM, const int N, const int32_t IMM) {	
+	op = op.substr(0, 3); // remove the possible 's' from the instruction
 	
-	if (op == "ADD")
-		return (a + b);
+	if (op == "MOV")
+		registers[RD] = IMM;
+	else if (op == "ADD")
+		registers[RD] = (registers[RN] + registers[RM]);
 	else if (op == "AND")
-		return (a & b);
+		registers[RD] = (registers[RN] & registers[RM]);
 	else if (op == "ASR") // fill with sign bit
-		return (static_cast<int>(a) >> b);
+		registers[RD] = (static_cast<int>(registers[RN]) >> N);
 	else if (op == "LSR") // fill with zeros
-		return (a >> b);
+		registers[RD] = (registers[RN] >> N);
 	else if (op == "LSL") // fill with zeros
-		return (a << b);
+		registers[RD] = (registers[RN] << N);
 	else if (op == "NOT")
-		return (~a);
+		registers[RD] = (~registers[RN]);
 	else if (op == "ORR")
-		return (a | b);
+		registers[RD] = (registers[RN] | registers[RM]);
 	else if (op == "SUB")
-		return (a - b);
+		registers[RD] = (registers[RN] - registers[RM]);
 	else if (op == "XOR")
-		return (a ^ b);
+		registers[RD] = (registers[RN] ^ registers[RM]);
 }
 
-// Takes a std::string possibly containing spaces and returns a version of that string with the spaces removed
-std::string removeSpaces(const std::string str) {
+// Takes a std::string possibly containing spaces and returns a version of that string without special characters
+std::string parseInput(const std::string str) {
 	std::string str2 = "";
 	
-	// Iterate over the characters in str and add them to str2 if they are not spaces
+	// Iterate over the characters in str and add them to str2 if they are not spaces or commas
 	for (char x : str) {
-		if (x != ' ')
+		if (x != ' ' && x != ',' && x != '#')
 			str2.push_back(x);
 	}
 	
+	return str2;
+}
+
+// Takes a std::string and returns that string in all uppercase
+std::string toUpper(const std::string str) {
+	std::string str2 = "";
+	for (char c : str) {
+		str2 += toupper(c);
+	}
 	return str2;
 }
 
@@ -100,14 +136,22 @@ uint32_t convertToInt(const std::string str) {
 	return num;
 }
 
+// Takes a char and converts it to an int
+int convertToInt(const char c) {
+	return (int(c) - 48);
+}
+
 // Takes the details of an operation and output the results (including overflow detection) in the proper format
-void printOutput(const std::string op, const uint32_t arg1, const uint32_t arg2, const uint32_t result, const int flags[2]) {
-	std::cout << std::left << std::setw(6) << op << "0x" << std::uppercase << std::left << std::setw(8) << std::hex << arg1;
-	
-	if (op.substr(0, 3) != "NOT") // Don't print the second argument (0x0) if the operation only has one operand
-		std::cout << "  0x"  << std::uppercase << std::left << std::setw(8) << std::hex << arg2;
-					   
-	std::cout << ": 0x" << std::uppercase << std::left << std::setw(8) << result << std::endl;
+void printOutput(const std::string instr, const int flags[2]) {
+	std::cout << instr << std::endl;
+	std::cout << "R0:0x" << std::hex << std::uppercase << registers[0] << "  ";
+	std::cout << "R1:0x" << std::hex << std::uppercase << registers[1] << "  ";
+	std::cout << "R2:0x" << std::hex << std::uppercase << registers[2] << "  ";
+	std::cout << "R3:0x" << std::hex << std::uppercase << registers[3] << "  " << std::endl;
+	std::cout << "R4:0x" << std::hex << std::uppercase << registers[4] << "  ";
+	std::cout << "R5:0x" << std::hex << std::uppercase << registers[5] << "  ";
+	std::cout << "R6:0x" << std::hex << std::uppercase << registers[6] << "  ";
+	std::cout << "R7:0x" << std::hex << std::uppercase << registers[7] << "  " << std::endl;
 	std::cout << "N: " << flags[0] << "  Z: " << flags[1] << std::endl;
 	std::cout << std::endl;
 }
