@@ -16,14 +16,15 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 void performOperation(std::string, const int, const int, const int, const int, const int32_t);
-std::string parseInput(const std::string);
+std::string parseInput(std::string);
 uint32_t convertToInt(const std::string);
 int convertToInt(const char);
 std::string toUpper(const std::string);
 void printOutput(const std::string, const int[2]);
-int32_t registers[8];
+uint32_t registers[8];
 
 int main() {
 	// open the input file
@@ -38,14 +39,14 @@ int main() {
 	// iterate through the instructions
   	std::string instr;
 	while (getline(inputFile, instr)) {
-		std::string op;			// OPCODE
-		int RD, RN, RM, N;		// register indexes and shift amount
-		int32_t IMM;			// immediate
-		int flags[2] = {0, 0};  // [N, Z]
+		std::string op = "";			// OPCODE
+		int RD = 0, RN = 0, RM = 0, N = 0;	// register indexes and shift amount
+		int32_t IMM = 0;			// immediate
+		int flags[2] = {0, 0};  		// [N, Z]
 		
 		// parse the instruction for its operation, then parse for the remaining arguments
 		op = toUpper(parseInput(instr.substr(0, 4)));
-		RD = convertToInt(parseInput(instr.substr(5, 3)).back());
+		RD = convertToInt(parseInput(instr.substr(4, 4)).back());
 		
 		if (op == "MOV") {
 			IMM  = convertToInt(parseInput(instr.substr(8)));
@@ -56,7 +57,7 @@ int main() {
 			if (op.substr(0, 3) == "LSL" || op.substr(0, 3) == "LSR" || op.substr(0, 3) == "ASR") {
 				N = convertToInt(parseInput(instr.substr(11)));
 			}
-			else {
+			else if (op.substr(0, 3) != "CMP" && op.substr(0, 3) != "TST") {
 				RM = convertToInt(parseInput(instr.substr(11)).back());
 			}
 		}
@@ -104,17 +105,15 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 		registers[RD] = (registers[RN] ^ registers[RM]);
 }
 
-// Takes a std::string possibly containing spaces and returns a version of that string without special characters
-std::string parseInput(const std::string str) {
-	std::string str2 = "";
-	
-	// Iterate over the characters in str and add them to str2 if they are not spaces or commas
-	for (char x : str) {
-		if (x != ' ' && x != ',' && x != '#')
-			str2.push_back(x);
-	}
-	
-	return str2;
+// Takes a std::string and removes unnecessary characters
+std::string parseInput(std::string str) {
+	// Remove ' ', ',', '#', and '\r' from the string
+	str.erase(remove(str.begin(), str.end(), ' '), str.end());
+	str.erase(remove(str.begin(), str.end(), ','), str.end());
+	str.erase(remove(str.begin(), str.end(), '#'), str.end());
+	str.erase(remove(str.begin(), str.end(), '\r'), str.end());
+
+	return str;
 }
 
 // Takes a std::string and returns that string in all uppercase
