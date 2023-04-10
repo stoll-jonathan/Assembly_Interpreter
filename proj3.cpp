@@ -5,10 +5,10 @@
  */
  
  /**
- TODO: add C and V flags, impliment CMP and TST, remove "<this is for extra credit>" from optional instructions
+ TODO: impliment C and V flags
  update in README: main(), parseInput(), performOperation(), printOutput()
  
- test all instructions on linux
+ fix flags
  **/
 
 #include <iostream>
@@ -25,6 +25,7 @@ int convertToInt(const char);
 std::string toUpper(const std::string);
 void printOutput(const std::string, const int[2]);
 uint32_t registers[8];
+int flags[4];  // [N, Z, C, V]
 
 int main() {
 	// open the input file
@@ -39,10 +40,12 @@ int main() {
 	// iterate through the instructions
   	std::string instr;
 	while (getline(inputFile, instr)) {
+		// reset command details
 		std::string op = "";			// OPCODE
 		int RD = 0, RN = 0, RM = 0, N = 0;	// register indexes and shift amount
 		int32_t IMM = 0;			// immediate
-		int flags[2] = {0, 0};  		// [N, Z]
+		for (int i = 0; i < 4; i++)		// [N, Z, C, V]
+			flags[i] = 0;
 		
 		// parse the instruction for its operation, then parse for the remaining arguments
 		op = toUpper(parseInput(instr.substr(0, 4)));
@@ -64,10 +67,6 @@ int main() {
 		
 		// perform the operation and determine the values of the flags
 		performOperation(op, RD, RN, RM, N, IMM);
-		if (toupper(op.back()) == 'S') {
-			flags[0] = (registers[RD] <  0) ? 1 : 0;
-			flags[1] = (registers[RD] == 0) ? 1 : 0;
-		}
 		
 		// print the findings
 		printOutput(instr, flags);
@@ -79,30 +78,54 @@ int main() {
   	return 0;
 }
 
-// Takes all arguemnts and performs the operation
-void performOperation(std::string op, const int RD, const int RN, const int RM, const int N, const int32_t IMM) {	
-	op = op.substr(0, 3); // remove the possible 's' from the instruction
+// Takes all arguments and performs the operation
+void performOperation(std::string op, const int RD, const int RN, const int RM, const int N, const int32_t IMM) {
+	uint32_t result;
+	bool resultDiscarded = false;
+	bool flagsAffected = ((toupper(op.back()) == 'S') ? true : false);
+	op = op.substr(0, 3); // remove the possible 'S' from the instruction
 	
+	// Find the result of the instruction
 	if (op == "MOV")
-		registers[RD] = IMM;
+		result = IMM;
 	else if (op == "ADD")
-		registers[RD] = (registers[RN] + registers[RM]);
+		result = (registers[RN] + registers[RM]);
 	else if (op == "AND")
-		registers[RD] = (registers[RN] & registers[RM]);
+		result = (registers[RN] & registers[RM]);
 	else if (op == "ASR") // fill with sign bit
-		registers[RD] = (static_cast<int>(registers[RN]) >> N);
+		result = (static_cast<int>(registers[RN]) >> N);
 	else if (op == "LSR") // fill with zeros
-		registers[RD] = (registers[RN] >> N);
+		result = (registers[RN] >> N);
 	else if (op == "LSL") // fill with zeros
-		registers[RD] = (registers[RN] << N);
+		result = (registers[RN] << N);
 	else if (op == "NOT")
-		registers[RD] = (~registers[RN]);
+		result = (~registers[RN]);
 	else if (op == "ORR")
-		registers[RD] = (registers[RN] | registers[RM]);
+		result = (registers[RN] | registers[RM]);
 	else if (op == "SUB")
-		registers[RD] = (registers[RN] - registers[RM]);
+		result = (registers[RN] - registers[RM]);
 	else if (op == "XOR")
-		registers[RD] = (registers[RN] ^ registers[RM]);
+		result = (registers[RN] ^ registers[RM]);
+	else if (op == "CMP") {
+		result = (registers[RN] - registers[RM]);
+		flagsAffected = true;
+		resultDiscarded = true;
+	}
+	else if (op == "TST") {
+		result = (registers[RN] & registers[RM]);
+		flagsAffected = true;
+		resultDiscarded = true;
+	}
+
+	// Determine the new flag values if required
+	if (flagsAffected) {
+		flags[0] = (result <  0) ? 1 : 0;
+		flags[1] = (result == 0) ? 1 : 0;
+	}
+
+	// Update the register if required
+	if (!resultDiscarded)
+		registers[RD] = result;
 }
 
 // Takes a std::string and removes unnecessary characters
@@ -152,6 +175,6 @@ void printOutput(const std::string instr, const int flags[2]) {
 	std::cout << "R5:0x" << std::hex << std::uppercase << registers[5] << "  ";
 	std::cout << "R6:0x" << std::hex << std::uppercase << registers[6] << "  ";
 	std::cout << "R7:0x" << std::hex << std::uppercase << registers[7] << "  " << std::endl;
-	std::cout << "N: " << flags[0] << "  Z: " << flags[1] << std::endl;
-	std::cout << std::endl;
+	std::cout << "N: " << flags[0] << "  Z: " << flags[1] << "  C: " << flags[2] << "  V: " << flags[3];
+	std::cout << std::endl << std::endl;
 }
