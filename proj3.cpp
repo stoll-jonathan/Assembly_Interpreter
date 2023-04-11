@@ -6,7 +6,6 @@
  
  /**
  TODO: impliment C and V flags
- update in README: main(), parseInput(), performOperation(), printOutput()
  
  fix flags
  **/
