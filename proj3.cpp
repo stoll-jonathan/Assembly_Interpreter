@@ -5,7 +5,7 @@
  */
  
  /**
- TODO: impliment C and V flags, add new flag logic to README
+ TODO: impliment C and V flags, add new flag logic to README, update README for new input workflow
  **/
 
 #include <iostream>
@@ -46,22 +46,26 @@ int main() {
 		
 		// parse the instruction for its operation, then parse for the remaining arguments
 		op = toUpper(parseInput(instr.substr(0, 4)));
-		RD = convertToInt(parseInput(instr.substr(4, 4)).back());
-		
-		if (op == "MOV") {
-			IMM  = convertToInt(parseInput(instr.substr(8)));
+
+		if (op == "CMP" || op == "TST") {
+			RN = convertToInt(parseInput(instr.substr(4, 4)).back());
+			RM = convertToInt(parseInput(instr.substr(8, 3)).back());
 		}
-		else {
+		else if (op == "MOV") {
+			RD = convertToInt(parseInput(instr.substr(4, 4)).back());
+			IMM  = convertToInt(parseInput(instr.substr(8)));		
+		}
+		else { // Shifts and arithmetic
+			RD = convertToInt(parseInput(instr.substr(4, 4)).back());
 			RN = convertToInt(parseInput(instr.substr(8, 3)).back());
 			
-			if (op.substr(0, 3) == "LSL" || op.substr(0, 3) == "LSR" || op.substr(0, 3) == "ASR") {
+			if (op.substr(0, 3) == "LSL" || op.substr(0, 3) == "LSR" || op.substr(0, 3) == "ASR")
 				N = convertToInt(parseInput(instr.substr(11)));
-			}
-			else if (op.substr(0, 3) != "CMP" && op.substr(0, 3) != "TST") {
+			else {
 				RM = convertToInt(parseInput(instr.substr(11)).back());
 			}
 		}
-		
+
 		// perform the operation and determine the values of the flags
 		performOperation(op, RD, RN, RM, N, IMM);
 		
@@ -104,12 +108,12 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 	else if (op == "XOR")
 		result = (registers[RN] ^ registers[RM]);
 	else if (op == "CMP") {
-		result = (registers[RD] - registers[RN]);
+		result = (registers[RN] - registers[RM]);
 		flagsAffected = true;
 		resultDiscarded = true;
 	}
 	else if (op == "TST") {
-		result = (registers[RD] & registers[RN]);
+		result = (registers[RN] & registers[RM]);
 		flagsAffected = true;
 		resultDiscarded = true;
 	}
