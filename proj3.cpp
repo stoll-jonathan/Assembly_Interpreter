@@ -5,9 +5,7 @@
  */
  
  /**
- TODO: impliment C and V flags
- 
- fix flags
+ TODO: impliment C and V flags, add new flag logic to README
  **/
 
 #include <iostream>
@@ -79,7 +77,7 @@ int main() {
 
 // Takes all arguments and performs the operation
 void performOperation(std::string op, const int RD, const int RN, const int RM, const int N, const int32_t IMM) {
-	uint32_t result;
+	int32_t result;
 	bool resultDiscarded = false;
 	bool flagsAffected = ((toupper(op.back()) == 'S') ? true : false);
 	op = op.substr(0, 3); // remove the possible 'S' from the instruction
@@ -106,12 +104,12 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 	else if (op == "XOR")
 		result = (registers[RN] ^ registers[RM]);
 	else if (op == "CMP") {
-		result = (registers[RN] - registers[RM]);
+		result = (registers[RD] - registers[RN]);
 		flagsAffected = true;
 		resultDiscarded = true;
 	}
 	else if (op == "TST") {
-		result = (registers[RN] & registers[RM]);
+		result = (registers[RD] & registers[RN]);
 		flagsAffected = true;
 		resultDiscarded = true;
 	}
