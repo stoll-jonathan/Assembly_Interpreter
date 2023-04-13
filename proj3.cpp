@@ -5,7 +5,7 @@
  */
  
  /**
- TODO: impliment C and V flags, add new flag logic to README
+ TODO: Test flags affected properly, finish implimenting C flag, impliment V flag, add new flag logic to README
  **/
 
 #include <iostream>
@@ -14,11 +14,13 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <bitset>
 
 void performOperation(std::string, const int, const int, const int, const int, const int32_t);
 std::string parseInput(std::string);
 uint32_t convertToInt(const std::string);
 int convertToInt(const char);
+bool MSB_Is_Set(uint32_t);
 std::string toUpper(const std::string);
 void printOutput(const std::string, const int[2]);
 uint32_t registers[8];
@@ -82,8 +84,7 @@ int main() {
 // Takes all arguments and performs the operation
 void performOperation(std::string op, const int RD, const int RN, const int RM, const int N, const int32_t IMM) {
 	int32_t result;
-	bool resultDiscarded = false;
-	bool flagsAffected = ((toupper(op.back()) == 'S') ? true : false);
+	bool S_Is_Present = ((toupper(op.back()) == 'S') ? true : false);
 	op = op.substr(0, 3); // remove the possible 'S' from the instruction
 	
 	// Find the result of the instruction
@@ -107,26 +108,35 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 		result = (registers[RN] - registers[RM]);
 	else if (op == "XOR")
 		result = (registers[RN] ^ registers[RM]);
-	else if (op == "CMP") {
+	else if (op == "CMP")
 		result = (registers[RN] - registers[RM]);
-		flagsAffected = true;
-		resultDiscarded = true;
-	}
-	else if (op == "TST") {
+	else if (op == "TST")
 		result = (registers[RN] & registers[RM]);
-		flagsAffected = true;
-		resultDiscarded = true;
-	}
 
-	// Determine the new flag values if required
-	if (flagsAffected) {
-		flags[0] = (result <  0) ? 1 : 0;
-		flags[1] = (result == 0) ? 1 : 0;
+	// Determine new flag values when required
+	if (S_Is_Present || op == "CMP" || op == "TST" || op == "MOV") {
+		flags[0] = (result <  0) ? 1 : 0; // N
+		flags[1] = (result == 0) ? 1 : 0; // Z
+
+		if (op == "ADD" || op == "SUB" || op == "CMP") { // V
+			flags[3] = 0; // impliment later
+
+			if (op == "LSR" || op == "LSL" || op == "ASR") { // C
+				flags[2] = (MSB_Is_Set(result)) ? 1 : 0; // finish implimenting later
+				std::cout << std::bitset<8*sizeof(result)>(result) << std::endl;
+			}
+		}
 	}
 
 	// Update the register if required
-	if (!resultDiscarded)
+	if (op != "CMP" && op != "TST")
 		registers[RD] = result;
+}
+
+// Takes an unsigned 32-bit integer and returns the value of the MSB
+bool MSB_Is_Set(uint32_t num) {
+	// Mask the number with 0b1000_0000_0000_0000_0000_0000_0000_0000 to test if the MSB is 1
+	return ((num & 0x80000000) == 0x80000000);
 }
 
 // Takes a std::string and removes unnecessary characters
