@@ -5,7 +5,7 @@
  */
  
  /**
- TODO: impliment C and V flags, add new flag logic to README, update README for new input workflow
+ TODO: impliment C and V flags, add new flag logic to README
  **/
 
 #include <iostream>
