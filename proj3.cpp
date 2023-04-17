@@ -5,7 +5,7 @@
  */
  
  /**
- TODO: Test flags affected properly, finish implimenting C flag, impliment V flag, add new flag logic to README
+ TODO: Test C and V flags, finish implimenting C flag, impliment V flag, add new flag logic to README
  **/
 
 #include <iostream>
@@ -114,7 +114,7 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 		result = (registers[RN] & registers[RM]);
 
 	// Determine new flag values when required
-	if (S_Is_Present || op == "CMP" || op == "TST" || op == "MOV") {
+	if (S_Is_Present || op == "CMP" || op == "TST") {
 		flags[0] = (result <  0) ? 1 : 0; // N
 		flags[1] = (result == 0) ? 1 : 0; // Z
 
