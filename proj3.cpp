@@ -3,10 +3,6 @@
  * 4-22-23
  * CS 219.1001
  */
- 
- /**
- TODO: Test C and V flags, finish implimenting C flag, impliment V flag, add new flag logic to README
- **/
 
 #include <iostream>
 #include <iomanip>
@@ -14,7 +10,6 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
-#include <bitset>
 
 void performOperation(std::string, const int, const int, const int, const int, const int32_t);
 std::string parseInput(std::string);
@@ -118,14 +113,20 @@ void performOperation(std::string op, const int RD, const int RN, const int RM, 
 		flags[0] = (result <  0) ? 1 : 0; // N
 		flags[1] = (result == 0) ? 1 : 0; // Z
 
-		if (op == "ADD" || op == "SUB" || op == "CMP") { // V
-			flags[3] = 0; // impliment later
-
-			if (op == "LSR" || op == "LSL" || op == "ASR") { // C
-				flags[2] = (MSB_Is_Set(result)) ? 1 : 0; // finish implimenting later
-				std::cout << std::bitset<8*sizeof(result)>(result) << std::endl;
-			}
+		// C
+		if (op == "ADD")
+			flags[2] = (result < registers[RN] || result < registers[RM]);
+		else if (op == "SUB" || op == "CMP")
+			flags[2] = (result > registers[RN] && result > registers[RM]);
+		else if (op == "LSR" || op == "LSL" || op == "ASR") {
+			flags[2] = MSB_Is_Set(result);
 		}
+
+		// V
+		if (op == "ADD")
+			flags[3] = flags[2];
+		else if (op == "SUB" || op == "CMP")
+			flags[3] = ((flags[2] == 0) ? 1 : 0);
 	}
 
 	// Update the register if required
